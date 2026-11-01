@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinansPro - Kurumsal Gelir, Gider & Bulut Muhasebe</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome İkonları -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Professional Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+        }
+
+        /* GERÇEKÇİ 3D KÜP BUTON TASARIMI */
+        .btn-3d {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.15), 0 8px 15px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn-3d:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 rgba(0, 0, 0, 0.15), 0 12px 20px rgba(0, 0, 0, 0.12);
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Hesap Makinesi 3D Tuşları */
+        .calc-btn-3d {
+            position: relative;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 0 #94a3b8, 0 5px 8px rgba(0,0,0,0.1);
+            transform: translateY(0);
+            transition: all 0.08s ease;
+            font-weight: 600;
+        }
+        .calc-btn-3d:hover {
+            background: #f1f5f9;
+        }
+        .calc-btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #94a3b8, 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .calc-btn-op {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            color: #2563eb;
+            box-shadow: 0 4px 0 #3b82f6, 0 5px 8px rgba(0,0,0,0.1);
+        }
+        .calc-btn-eq {
+            background: #2563eb;
+            border-color: #1d4ed8;
+            color: #ffffff;
+            box-shadow: 0 4px 0 #1e40af, 0 5px 8px rgba(0,0,0,0.1);
+        }
+        .calc-btn-eq:active {
+            box-shadow: 0 0 0 #1e40af, 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .capitalize-first {
+            text-transform: capitalize;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-100 via-sky-50/25 to-indigo-50/30 font-sans text-slate-800 antialiased min-h-screen pb-12" onload="initApp()">
+
+    <!-- Üst Kurumsal Navbar -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-chart-pie"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">FinansPro 🧿</h1>
+                    <p class="text-xs text-slate-500">GitHub Bulut Senkronize Kurumsal Muhasebe</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span id="cloudStatus" class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-3.5 py-1.5 rounded-full font-medium flex items-center gap-1.5 shadow-2xs">
+                    <i class="fa-solid fa-cloud"></i> GitHub Bağlantısı Bekleniyor
+                </span>
+                <button onclick="toggleConfigModal()" class="btn-3d bg-white text-slate-700 p-2.5 rounded-xl text-sm transition border border-slate-200" title="GitHub Gist Bulut Ayarları">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- GitHub Bulut Ayar Modal Paneli -->
+    <div id="configModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 animate-fade-in">
+            <h3 class="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                <i class="fa-brands fa-github text-blue-600 text-xl"></i> GitHub Gist Bulut Entegrasyonu
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">Verilerinizi GitHub Gist üzerinden otomatik senkronize etmek için Token ve Gist ID girin.</p>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">GitHub Personal Access Token (PAT)</label>
+                    <input type="password" id="githubTokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full rounded-2xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">GitHub Gist ID</label>
+                    <input type="text" id="githubGistIdInput" placeholder="xxxxxxxxxxxxxxxxxxxx" class="w-full rounded-2xl border border-slate-200 p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button onclick="toggleConfigModal()" class="btn-3d px-4 py-2.5 bg-slate-100 text-slate-700 text-sm font-medium rounded-xl transition border border-slate-200">İptal</button>
+                    <button onclick="saveGitHubConfig()" class="btn-3d px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl transition shadow-md shadow-blue-500/20">Kaydet ve Senkronize Et</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HESAP MAKİNESİ MODAL -->
+    <div id="calcModal" class="hidden fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border border-slate-100 animate-fade-in space-y-4">
+            <div class="flex justify-between items-center">
+                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-calculator text-blue-600"></i> Akıllı Hesap Makinesi
+                </h4>
+                <button onclick="toggleCalculator()" class="text-slate-400 hover:text-slate-600 text-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="bg-slate-900 text-white p-3.5 rounded-2xl text-right text-2xl font-mono tracking-wider overflow-x-auto shadow-inner" id="calcDisplay">0</div>
+            
+            <div class="grid grid-cols-4 gap-2 text-sm">
+                <button type="button" onclick="calcClear()" class="calc-btn-3d p-3 rounded-xl text-rose-600 font-bold">C</button>
+                <button type="button" onclick="calcAppend('/')" class="calc-btn-3d calc-btn-op p-3 rounded-xl">/</button>
+                <button type="button" onclick="calcAppend('*')" class="calc-btn-3d calc-btn-op p-3 rounded-xl">×</button>
+                <button type="button" onclick="calcBack()" class="calc-btn-3d p-3 rounded-xl text-slate-600"><i class="fa-solid fa-delete-left"></i></button>
+                
+                <button type="button" onclick="calcAppend('7')" class="calc-btn-3d p-3 rounded-xl">7</button>
+                <button type="button" onclick="calcAppend('8')" class="calc-btn-3d p-3 rounded-xl">8</button>
+                <button type="button" onclick="calcAppend('9')" class="calc-btn-3d p-3 rounded-xl">9</button>
+                <button type="button" onclick="calcAppend('-')" class="calc-btn-3d calc-btn-op p-3 rounded-xl">-</button>
+                
+                <button type="button" onclick="calcAppend('4')" class="calc-btn-3d p-3 rounded-xl">4</button>
+                <button type="button" onclick="calcAppend('5')" class="calc-btn-3d p-3 rounded-xl">5</button>
+                <button type="button" onclick="calcAppend('6')" class="calc-btn-3d p-3 rounded-xl">6</button>
+                <button type="button" onclick="calcAppend('+')" class="calc-btn-3d calc-btn-op p-3 rounded-xl">+</button>
+                
+                <button type="button" onclick="calcAppend('1')" class="calc-btn-3d p-3 rounded-xl">1</button>
+                <button type="button" onclick="calcAppend('2')" class="calc-btn-3d p-3 rounded-xl">2</button>
+                <button type="button" onclick="calcAppend('3')" class="calc-btn-3d p-3 rounded-xl">3</button>
+                <button type="button" onclick="calcCalculate()" class="calc-btn-3d calc-btn-eq p-3 rounded-xl row-span-2 flex items-center justify-center text-lg">=</button>
+                
+                <button type="button" onclick="calcAppend('0')" class="calc-btn-3d p-3 rounded-xl col-span-2">0</button>
+                <button type="button" onclick="calcAppend('.')" class="calc-btn-3d p-3 rounded-xl">.</button>
+            </div>
+
+            <button type="button" onclick="useCalcResult()" class="btn-3d w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl text-xs transition shadow-sm">
+                Sonucu Tutara Aktar ve Kapat
+            </button>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        
+        <!-- ÜST ÖZET KARTLARI -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="glass-card p-5 rounded-3xl shadow-xs border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50/60 to-white">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Toplam Gelir</p>
+                        <h3 id="totalIncome" class="text-2xl font-bold text-emerald-600 mt-1">0,00 ₺</h3>
+                    </div>
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 rounded-3xl shadow-xs border-l-4 border-l-rose-500 bg-gradient-to-r from-rose-50/60 to-white">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Toplam Gider / Borç</p>
+                        <h3 id="totalExpense" class="text-2xl font-bold text-rose-600 mt-1">0,00 ₺</h3>
+                    </div>
+                    <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fa-solid fa-arrow-trend-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-5 rounded-3xl shadow-xs border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50/60 to-white">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Net Bakiye</p>
+                        <h3 id="netBalance" class="text-2xl font-bold text-blue-600 mt-1">0,00 ₺</h3>
+                    </div>
+                    <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÖDEME VADESİ YAKLAŞANLAR (3 GÜN KALA HATIRLATICI UYARI PANELI) -->
+        <div id="dueAlertContainer" class="hidden glass-card p-4 rounded-3xl border-l-4 border-l-amber-500 bg-amber-50/40 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0">
+                    <i class="fa-solid fa-bell animate-bounce"></i>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-amber-900 uppercase">Ödeme Vadesi Yaklaşan Giderler (Son 3 Gün!)</h4>
+                    <p id="dueAlertText" class="text-xs text-amber-700 mt-0.5">Ödemesi yaklaşan harcamalarınız bulunmaktadır.</p>
+                </div>
+            </div>
+            <button onclick="sendWhatsAppReminder()" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0 shadow-md shadow-emerald-500/20">
+                <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp ile Hatırlat
+            </button>
+        </div>
+
+        <!-- ANA İÇERİK IZGARASI -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- SOL KOLON: İşlem Formu (Daha kompakt, daraltılmış ve yatay hizalı) -->
+            <section class="lg:col-span-1">
+                <div id="formCard" class="glass-card p-5 rounded-3xl shadow-xs transition-all duration-300">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 id="formTitleText" class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-plus text-blue-600"></i> Yeni İşlem Ekle
+                        </h2>
+                        <button id="cancelEditBtn" onclick="resetForm()" class="hidden text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2.5 py-1 rounded-xl transition">İptal</button>
+                    </div>
+                    
+                    <!-- CapsLock Uyarı Kutusu -->
+                    <div id="capsLockWarning" class="hidden mb-3 px-3 py-1.5 bg-amber-100 text-amber-800 text-[11px] font-semibold rounded-xl flex items-center gap-2 border border-amber-300">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Dikkat: Caps Lock açık!
+                    </div>
+
+                    <form id="budgetForm" class="space-y-3">
+                        <input type="hidden" id="editId" value="">
+                        
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">İşlem Türü</label>
+                            <select id="type" data-nav="0" class="form-field w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 shadow-2xs">
+                                <option value="gelir">Gelir (Tahsilat)</option>
+                                <option value="gider" selected>Gider / Harcama</option>
+                                <option value="borc">Borç / Vade Ödemesi</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Açıklama / Başlık</label>
+                            <input type="text" id="title" data-nav="1" required placeholder="Örn: Ofis Kirası" class="form-field capitalize-first w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 shadow-2xs">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-[11px] font-semibold text-slate-600">Tutar (TL)</label>
+                                <button type="button" onclick="toggleCalculator()" class="btn-3d bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded-lg font-semibold flex items-center gap-1 border border-blue-200 shadow-xs">
+                                    <i class="fa-solid fa-calculator"></i> Hesap Makinesi
+                                </button>
+                            </div>
+                            <input type="text" id="amount" data-nav="2" inputmode="decimal" required placeholder="0,00" class="form-field w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 shadow-2xs">
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Ödeme / Tahsilat Yöntemi</label>
+                            <select id="paymentMethod" data-nav="3" class="form-field w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 shadow-2xs">
+                                <option value="Nakit">Nakit</option>
+                                <option value="Kredi Kartı">Kredi Kartı</option>
+                                <option value="Banka Havalesi">Banka Havalesi / EFT</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">İşlem Tarihi</label>
+                                <input type="date" id="txDate" data-nav="4" class="form-field w-full rounded-xl border border-slate-200 px-2.5 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 shadow-2xs">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Son Ödeme / Vade</label>
+                                <input type="date" id="dueDate" data-nav="5" class="form-field w-full rounded-xl border border-slate-200 px-2.5 py-2 text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 shadow-2xs">
+                            </div>
+                        </div>
+
+                        <button type="submit" id="submitBtn" data-nav="6" class="form-field btn-3d w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition shadow-lg shadow-blue-500/25 text-xs">
+                            Kaydet ve Senkronize Et
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- SAĞ KOLON: Grafikler, Filtreler ve Tablo -->
+            <section class="lg:col-span-2 space-y-6">
+                
+                <!-- Nakit Akış Grafiği -->
+                <div class="glass-card p-6 rounded-3xl shadow-xs">
+                    <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-blue-600"></i> Nakit Akış & Performans Grafiği
+                    </h3>
+                    <div class="h-64 relative">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- İşlem Kayıtları ve Filtreleme -->
+                <div class="glass-card p-6 rounded-3xl shadow-xs">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-blue-600"></i> İşlemler
+                                <span id="recordCount" class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-semibold">0 Kayıt</span>
+                            </h3>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                            <div class="bg-slate-200/70 p-1 rounded-2xl flex text-xs font-semibold gap-1">
+                                <button onclick="setFilter('all')" id="filterAll" class="btn-3d px-3.5 py-1.5 rounded-xl bg-white text-blue-600 shadow-xs transition border border-slate-200">Tümü</button>
+                                <button onclick="setFilter('gelir')" id="filterGelir" class="px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition">Gelir</button>
+                                <button onclick="setFilter('gider')" id="filterGider" class="px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition">Gider</button>
+                            </div>
+
+                            <div class="relative w-full sm:w-44">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                                </span>
+                                <input type="text" id="searchInput" oninput="renderUI()" placeholder="Kayıt ara..." class="w-full pl-9 pr-3 py-2 text-xs rounded-2xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 shadow-2xs">
+                            </div>
+                            <button onclick="exportToExcel()" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-2xl text-xs font-medium transition flex items-center gap-1.5 shrink-0 shadow-md shadow-emerald-500/20" title="Excel Olarak İndir">
+                                <i class="fa-solid fa-file-excel"></i> Excel
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-xs text-slate-400 uppercase tracking-wider">
+                                    <th class="py-3 px-2">Tür</th>
+                                    <th class="py-3 px-2">Açıklama</th>
+                                    <th class="py-3 px-2">Yöntem</th>
+                                    <th class="py-3 px-2">Vade</th>
+                                    <th class="py-3 px-2 text-right">Tutar</th>
+                                    <th class="py-3 px-2 text-center">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionTableBody" class="text-sm divide-y divide-slate-100">
+                                <tr><td colspan="6" class="text-center py-6 text-slate-400">Yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <!-- JavaScript Mantığı -->
+    <script>
+        let transactions = [];
+        let financeChartInstance = null;
+        let currentFilter = 'all';
+        let editingId = null;
+
+        let githubToken = localStorage.getItem('finanspro_gh_token') || "";
+        let githubGistId = localStorage.getItem('finanspro_gh_gist') || "";
+
+        document.getElementById('txDate').valueAsDate = new Date();
+        document.getElementById('dueDate').valueAsDate = new Date();
+
+        function initApp() {
+            if (githubToken && githubGistId) {
+                loadFromGitHub();
+            } else {
+                loadFromLocal();
+            }
+        }
+
+        function toggleConfigModal() {
+            const modal = document.getElementById('configModal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('githubTokenInput').value = githubToken;
+                document.getElementById('githubGistIdInput').value = githubGistId;
+            }
+        }
+
+        function saveGitHubConfig() {
+            githubToken = document.getElementById('githubTokenInput').value.trim();
+            githubGistId = document.getElementById('githubGistIdInput').value.trim();
+            localStorage.setItem('finanspro_gh_token', githubToken);
+            localStorage.setItem('finanspro_gh_gist', githubGistId);
+            toggleConfigModal();
+            initApp();
+        }
+
+        // --- ENTER ve YÖN TUŞLARI İLE FORM GEZİNME VE CAPSLOCK KONTROLÜ ---
+        document.addEventListener('keydown', function(e) {
+            if (e.getModifierState && e.getModifierState('CapsLock')) {
+                document.getElementById('capsLockWarning').classList.remove('hidden');
+            } else {
+                document.getElementById('capsLockWarning').classList.add('hidden');
+            }
+
+            const activeEl = document.activeElement;
+            if (activeEl && activeEl.classList.contains('form-field')) {
+                const fields = Array.from(document.querySelectorAll('.form-field'));
+                let index = fields.indexOf(activeEl);
+
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (index < fields.length - 1) {
+                        fields[index + 1].focus();
+                        if(fields[index + 1].select) fields[index + 1].select();
+                    } else {
+                        fields[index].form.requestSubmit();
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (index < fields.length - 1) {
+                        fields[index + 1].focus();
+                    }
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (index > 0) {
+                        fields[index - 1].focus();
+                    }
+                }
+            }
+        });
+
+        document.getElementById('title').addEventListener('input', function(e) {
+            let val = e.target.value;
+            if (val.length > 0) {
+                e.target.value = val.charAt(0).toUpperCase() + val.slice(1);
+            }
+        });
+
+        // --- GITHUB GIST SENKRONİZASYON ---
+        function loadFromGitHub() {
+            document.getElementById('cloudStatus').innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GitHub Buluttan Alınıyor...`;
+            fetch(`https://api.github.com/gists/${githubGistId}`, {
+                headers: { 'Authorization': `token ${githubToken}` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.files && data.files['finanspro_data.json']) {
+                    transactions = JSON.parse(data.files['finanspro_data.json'].content) || [];
+                } else {
+                    transactions = [];
+                }
+                document.getElementById('cloudStatus').innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-600"></i> GitHub Bulut Aktif`;
+                document.getElementById('cloudStatus').className = "text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-1.5 rounded-full font-medium flex items-center gap-1.5 shadow-2xs";
+                renderUI();
+                checkDueDates();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('cloudStatus').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600"></i> GitHub Bağlantı Hatası (Yerel Mod)`;
+                loadFromLocal();
+            });
+        }
+
+        function saveToCloudOrLocal() {
+            saveToLocal();
+            if (githubToken && githubGistId) {
+                document.getElementById('cloudStatus').innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> GitHub'a Kaydediliyor...`;
+                fetch(`https://api.github.com/gists/${githubGistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            'finanspro_data.json': {
+                                content: JSON.stringify(transactions, null, 2)
+                            }
+                        }
+                    })
+                })
+                .then(res => res.json())
+                .then(() => {
+                    document.getElementById('cloudStatus').innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-600"></i> GitHub Bulut Aktif`;
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('cloudStatus').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600"></i> Bulut Kayıt Hatası`;
+                });
+            }
+        }
+
+        function loadFromLocal() {
+            try {
+                const saved = localStorage.getItem('finanspro_local_data');
+                transactions = saved ? JSON.parse(saved) : [];
+            } catch (e) {
+                transactions = [];
+            }
+            renderUI();
+            checkDueDates();
+        }
+
+        function saveToLocal() {
+            localStorage.setItem('finanspro_local_data', JSON.stringify(transactions));
+        }
+
+        // --- 3 GÜN KALA VADE KONTROLÜ VE WHATSAPP HATIRLATMA ---
+        let pendingDueItems = [];
+
+        function checkDueDates() {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            pendingDueItems = [];
+
+            transactions.forEach(t => {
+                if (t.type !== 'gelir' && t.dueDate) {
+                    let due = new Date(t.dueDate.split('T')[0]);
+                    due.setHours(0,0,0,0);
+                    let diffTime = due - today;
+                    let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    // 3 gün veya daha az kalmışsa ve vadesi geçmemişse
+                    if (diffDays >= 0 && diffDays <= 3) {
+                        pendingDueItems.push({ ...t, daysLeft: diffDays });
+                    }
+                }
+            });
+
+            const alertContainer = document.getElementById('dueAlertContainer');
+            const alertText = document.getElementById('dueAlertText');
+
+            if (pendingDueItems.length > 0) {
+                alertContainer.classList.remove('hidden');
+                alertContainer.classList.add('flex');
+                alertText.textContent = `${pendingDueItems.length} adet giderin ödeme vadesine 3 gün veya daha az kaldı!`;
+            } else {
+                alertContainer.classList.add('hidden');
+                alertContainer.classList.remove('flex');
+            }
+        }
+
+        function sendWhatsAppReminder() {
+            if (pendingDueItems.length === 0) return;
+            let msg = "🔔 *FinansPro - Ödeme Vadesi Yaklaşan Giderler* 🔔%0A%0A";
+            pendingDueItems.forEach(item => {
+                let formattedAmt = Number(item.amount).toLocaleString('tr-TR', {style: 'currency', currency: 'TRY'});
+                msg += `📌 *${item.title}*%0A- Tutar: ${formattedAmt}%0A- Vade: ${formatDateTR(item.dueDate)} (Kalan: ${item.daysLeft} gün)%0A%0A`;
+            });
+            window.open(`https://api.whatsapp.com/send?text=${msg}`, '_blank');
+        }
+
+        // --- FORM İŞLEMLERİ ---
+        document.getElementById('budgetForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            const isEditing = editId !== "";
+            const rawAmt = parseFloat(document.getElementById('amount').value.replace(/\./g, '').replace(',', '.')) || 0;
+
+            const txData = {
+                id: isEditing ? Number(editId) : Date.now(),
+                type: document.getElementById('type').value,
+                title: document.getElementById('title').value.trim(),
+                amount: rawAmt,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                txDate: document.getElementById('txDate').value ? document.getElementById('txDate').value + 'T00:00:00' : '',
+                dueDate: document.getElementById('dueDate').value ? document.getElementById('dueDate').value + 'T00:00:00' : ''
+            };
+
+            if (isEditing) {
+                const index = transactions.findIndex(item => Number(item.id) === Number(editId));
+                if (index !== -1) transactions[index] = txData;
+            } else {
+                transactions.push(txData);
+            }
+
+            saveToCloudOrLocal();
+            resetForm();
+            renderUI();
+            checkDueDates();
+        });
+
+        function editTx(id) {
+            const t = transactions.find(item => Number(item.id) === Number(id));
+            if (!t) return;
+            editingId = Number(id);
+            document.getElementById('editId').value = t.id;
+            document.getElementById('type').value = t.type;
+            document.getElementById('title').value = t.title;
+            document.getElementById('amount').value = Number(t.amount).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            document.getElementById('paymentMethod').value = t.paymentMethod;
+            if (t.txDate) document.getElementById('txDate').value = t.txDate.split('T')[0];
+            if (t.dueDate) document.getElementById('dueDate').value = t.dueDate.split('T')[0];
+
+            const formCard = document.getElementById('formCard');
+            formCard.className = "glass-card bg-amber-50/70 border-2 border-amber-400 p-5 rounded-3xl shadow-md transition-all duration-300";
+            
+            document.getElementById('formTitleText').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-600"></i> Kayıt Düzenleniyor`;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.textContent = "Değişiklikleri Güncelle";
+            submitBtn.className = "form-field btn-3d w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-xl transition shadow-lg shadow-amber-500/25 text-xs";
+            
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            renderUI();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            editingId = null;
+            document.getElementById('budgetForm').reset();
+            document.getElementById('editId').value = "";
+            document.getElementById('txDate').valueAsDate = new Date();
+            document.getElementById('dueDate').valueAsDate = new Date();
+
+            const formCard = document.getElementById('formCard');
+            formCard.className = "glass-card p-5 rounded-3xl shadow-xs transition-all duration-300";
+
+            document.getElementById('formTitleText').innerHTML = `<i class="fa-solid fa-circle-plus text-blue-600"></i> Yeni İşlem Ekle`;
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.textContent = "Kaydet ve Senkronize Et";
+            submitBtn.className = "form-field btn-3d w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl transition shadow-lg shadow-blue-500/25 text-xs";
+
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            renderUI();
+        }
+
+        function deleteTx(id) {
+            if (!confirm("Bu kaydı silmek istediğinize emin misiniz?")) return;
+            transactions = transactions.filter(item => Number(item.id) !== Number(id));
+            if (editingId === Number(id)) resetForm();
+            saveToCloudOrLocal();
+            renderUI();
+            checkDueDates();
+        }
+
+        function setFilter(type) {
+            currentFilter = type;
+            document.getElementById('filterAll').className = type === 'all' ? "btn-3d px-3.5 py-1.5 rounded-xl bg-white text-blue-600 shadow-xs transition border border-slate-200" : "px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition";
+            document.getElementById('filterGelir').className = type === 'gelir' ? "btn-3d px-3.5 py-1.5 rounded-xl bg-white text-emerald-600 shadow-xs transition border border-slate-200" : "px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition";
+            document.getElementById('filterGider').className = type === 'gider' ? "btn-3d px-3.5 py-1.5 rounded-xl bg-white text-rose-600 shadow-xs transition border border-slate-200" : "px-3.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition";
+            renderUI();
+        }
+
+        function formatDateTR(dateStr) {
+            if (!dateStr) return '-';
+            let cleanDate = dateStr.toString().split('T')[0];
+            let parts = cleanDate.split('-');
+            return parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : cleanDate;
+        }
+
+        function renderUI() {
+            const tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = '';
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+            
+            let sortedTransactions = [...transactions].sort((a, b) => {
+                let dateA = a.dueDate ? new Date(a.dueDate) : new Date(0);
+                let dateB = b.dueDate ? new Date(b.dueDate) : new Date(0);
+                return dateB - dateA;
+            });
+
+            const filteredTransactions = sortedTransactions.filter(t => {
+                let matchesFilter = currentFilter === 'all' || t.type === currentFilter;
+                let matchesSearch = t.title.toLowerCase().includes(searchQuery) || t.paymentMethod.toLowerCase().includes(searchQuery);
+                return matchesFilter && matchesSearch;
+            });
+
+            transactions.forEach(t => {
+                let amt = Number(t.amount) || 0;
+                if (t.type === 'gelir') totalIncome += amt;
+                else totalExpense += amt;
+            });
+
+            if (filteredTransactions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">Kayıt bulunamadı.</td></tr>`;
+            }
+
+            filteredTransactions.forEach(t => {
+                let badgeColor = t.type === 'gelir' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : (t.type === 'borc' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-rose-50 text-rose-700 border border-rose-200');
+                let typeText = t.type === 'gelir' ? 'Gelir' : (t.type === 'borc' ? 'Borç' : 'Gider');
+
+                const isBeingEdited = Number(editingId) === Number(t.id);
+                const rowBg = isBeingEdited ? 'bg-amber-100/70 border-l-4 border-l-amber-500' : 'hover:bg-slate-50';
+
+                const row = document.createElement('tr');
+                row.className = `${rowBg} transition-colors`;
+                row.innerHTML = `
+                    <td class="py-3 px-2"><span class="px-2.5 py-1 rounded-xl text-xs font-semibold ${badgeColor}">${typeText}</span></td>
+                    <td class="py-3 px-2 font-medium text-slate-700 capitalize-first">${t.title}</td>
+                    <td class="py-3 px-2 text-slate-500 text-xs">${t.paymentMethod}</td>
+                    <td class="py-3 px-2 text-slate-500 text-xs">${formatDateTR(t.dueDate)}</td>
+                    <td class="py-3 px-2 text-right font-semibold ${t.type === 'gelir' ? 'text-emerald-600' : 'text-rose-600'}">
+                        ${t.type === 'gelir' ? '+' : '-'}${Number(t.amount).toLocaleString('tr-TR', {style: 'currency', currency: 'TRY'})}
+                    </td>
+                    <td class="py-3 px-2 text-center flex items-center justify-center gap-3">
+                        <button onclick="editTx(${t.id})" class="${isBeingEdited ? 'text-amber-600 font-bold' : 'text-slate-400 hover:text-blue-600'} transition" title="Düzenle"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteTx(${t.id})" class="text-slate-400 hover:text-rose-600 transition" title="Sil"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            let netBalance = totalIncome - totalExpense;
+            document.getElementById('totalIncome').textContent = totalIncome.toLocaleString('tr-TR', {style: 'currency', currency: 'TRY'});
+            document.getElementById('totalExpense').textContent = totalExpense.toLocaleString('tr-TR', {style: 'currency', currency: 'TRY'});
+            document.getElementById('netBalance').textContent = netBalance.toLocaleString('tr-TR', {style: 'currency', currency: 'TRY'});
+            document.getElementById('recordCount').textContent = `${transactions.length} Kayıt`;
+
+            updateChart(totalIncome, totalExpense, netBalance);
+        }
+
+        function updateChart(inc, exp, net) {
+            const ctx = document.getElementById('financeChart').getContext('2d');
+            if (financeChartInstance) financeChartInstance.destroy();
+            financeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Toplam Gelir', 'Toplam Gider', 'Net Bakiye'],
+                    datasets: [{
+                        label: 'Tutar (TL)',
+                        data: [inc, exp, net],
+                        backgroundColor: ['#10b981', '#f43f5e', '#3b82f6'],
+                        borderRadius: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // --- HESAP MAKİNESİ MANTIĞI ---
+        let calcValue = "0";
+
+        function toggleCalculator() {
+            const modal = document.getElementById('calcModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function updateCalcDisplay() {
+            document.getElementById('calcDisplay').textContent = calcValue;
+        }
+
+        function calcClear() {
+            calcValue = "0";
+            updateCalcDisplay();
+        }
+
+        function calcBack() {
+            calcValue = calcValue.length > 1 ? calcValue.slice(0, -1) : "0";
+            updateCalcDisplay();
+        }
+
+        function calcAppend(char) {
+            if (calcValue === "0" && !isNaN(char)) {
+                calcValue = char;
+            } else {
+                calcValue += char;
+            }
+            updateCalcDisplay();
+        }
+
+        function calcCalculate() {
+            try {
+                let sanitized = calcValue.replace(/×/g, '*');
+                let result = eval(sanitized);
+                calcValue = Number(result).toString();
+                updateCalcDisplay();
+            } catch (e) {
+                calcValue = "Hata";
+                updateCalcDisplay();
+                setTimeout(calcClear, 1200);
+            }
+        }
+
+        function useCalcResult() {
+            try {
+                let sanitized = calcValue.replace(/×/g, '*');
+                let result = eval(sanitized);
+                if (!isNaN(result)) {
+                    document.getElementById('amount').value = Number(result).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    toggleCalculator();
+                }
+            } catch (e) {
+                alert("Geçersiz hesaplama!");
+            }
+        }
+
+        function exportToExcel() {
+            if (transactions.length === 0) { alert("Dışa aktarılacak kayıt yok!"); return; }
+            let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"></head><body><table border="1"><thead><tr style="background:#2563eb; color:#fff; font-weight:bold;"><th>Tür</th><th>Açıklama</th><th>Yöntem</th><th>Vade</th><th>Tutar</th></tr></thead><tbody>`;
+            transactions.forEach(t => {
+                let typeText = t.type === 'gelir' ? 'Gelir' : (t.type === 'borc' ? 'Borç' : 'Gider');
+                let cellBg = t.type === 'gelir' ? '#d1fae5' : '#ffe4e6';
+                html += `<tr><td style="background:${cellBg}; text-align:center;">${typeText}</td><td style="background:${cellBg};">${t.title}</td><td style="background:${cellBg};">${t.paymentMethod}</td><td style="background:${cellBg}; text-align:center;">${formatDateTR(t.dueDate)}</td><td style="background:${cellBg}; text-align:right;">${t.amount}</td></tr>`;
+            });
+            html += `</tbody></table></body></html>`;
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'FinansPro_BulutRapor.xls';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
